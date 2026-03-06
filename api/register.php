@@ -8,12 +8,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = getJsonInput();
-$nome = $input['nome'] ?? '';
-$email = $input['email'] ?? '';
+$nome = sanitize($input['nome'] ?? '');
+$email = sanitize($input['email'] ?? '');
 $senha = $input['senha'] ?? '';
+$codigo = $input['codigo'] ?? '';
+
+// VALIDAÇÃO DO CÓDIGO DE CONVITE
+if (strtolower($codigo) !== 'nero') {
+    sendError('Código de validação inválido. Você precisa de um convite para entrar.');
+}
 
 if (empty($nome) || empty($email) || empty($senha)) {
     sendError('Preencha todos os campos.');
+}
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    sendError('E-mail inválido.');
 }
 
 // Check if email exists

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // api/delete_receita.php
 require_once '../src/db.php';
 require_once '../src/auth.php';

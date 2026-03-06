@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // api/logout.php
 require_once '../src/auth.php';
 require_once '../src/utils.php';

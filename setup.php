@@ -1,14 +1,36 @@
 <?php
-require_once 'src/db.php';
+/**
+ * setup.php - Instalador Automático
+ */
+require_once 'src/utils.php';
+
+// Carrega as variáveis do arquivo .env
+loadEnv(__DIR__ . '/.env');
+
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+$dbName = getenv('DB_NAME') ?: 'iafinance_crm';
 
 try {
-    echo "<h1>IAFinance Setup 🛠️</h1>";
+    echo "<h1>Minhas Finanças Setup 🛠️</h1>";
     
-    // 1. Connection Check
-    echo "<p>✅ Conexão com banco de dados em <b>src/db.php</b> bem sucedida!</p>";
+    // 1. Initial Connection
+    $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
+    
+    // 2. Create Database
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "<p>✅ Banco de dados <b>$dbName</b> criado/verificado!</p>";
+    
+    // 3. Connect to specific DB
+    $pdo->exec("USE `$dbName` ");
+    $pdo = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8mb4", $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
 
-    // 2. Create Tables (Reading from database.sql or defining here)
-    // We'll define here to be safe and independent of file paths
+    // 4. Create Tables
     $sql = "
     CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -17,7 +39,7 @@ try {
         senha_hash VARCHAR(255) NOT NULL,
         role ENUM('admin', 'user') DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    ) ENGINE=InnoDB;
 
     CREATE TABLE IF NOT EXISTS receitas (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,7 +50,7 @@ try {
         data DATE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
+    ) ENGINE=InnoDB;
 
     CREATE TABLE IF NOT EXISTS despesas (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -36,27 +58,47 @@ try {
         descricao VARCHAR(255) NOT NULL,
         valor DECIMAL(10, 2) NOT NULL,
         categoria VARCHAR(50) NOT NULL,
+        subcategoria VARCHAR(50) DEFAULT NULL,
         data DATE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS metas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        titulo VARCHAR(100) NOT NULL,
+        valor_objetivo DECIMAL(10, 2) NOT NULL,
+        valor_poupado DECIMAL(10, 2) DEFAULT 0.00,
+        prazo DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS orcamentos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        categoria VARCHAR(50) NOT NULL,
+        valor_limite DECIMAL(10, 2) NOT NULL,
+        UNIQUE KEY user_cat (user_id, categoria),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB;
     ";
 
     $pdo->exec($sql);
     echo "<p>✅ Tabelas criadas/verificadas com sucesso.</p>";
 
-    // 3. Create Test User
+    // 5. Create Test User
     $nome = "Usuário Teste";
     $email = "admin@teste.com";
     $senha = "123456";
     $role = "admin";
     
-    // Check if exists
     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
     $stmt->execute([$email]);
     
     if($stmt->fetch()) {
-        echo "<p>⚠️ O usuário <b>$email</b> já existe. Senha inalterada.</p>";
+        echo "<p>⚠️ O usuário <b>$email</b> já existe.</p>";
     } else {
         $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO users (nome, email, senha_hash, role) VALUES (?, ?, ?, ?)");
@@ -65,22 +107,9 @@ try {
     }
 
     echo "<hr>";
-    echo "<h3>Dados de Acesso:</h3>";
-    echo "<ul>";
-    echo "<li><b>Email:</b> $email</li>";
-    echo "<li><b>Senha:</b> $senha</li>";
-    echo "</ul>";
-    echo "<p><a href='index.php'>➡️ Ir para Login</a></p>";
+    echo "<p><a href='index.php' style='padding: 10px 20px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px;'>➡️ Ir para Login</a></p>";
 
 } catch (PDOException $e) {
     echo "<h1>❌ Erro Fatal</h1>";
-    echo "<p>Não foi possível conectar ou configurar o banco.</p>";
-    echo "<p><b>Detalhe do Erro:</b> " . $e->getMessage() . "</p>";
-    echo "<hr>";
-    echo "<h3>Como corrigir:</h3>";
-    echo "<ol>";
-    echo "<li>Abra o arquivo <code>src/db.php</code></li>";
-    echo "<li>Verifique se o HOST, NOME DO BANCO, USUÁRIO e SENHA estão corretos conforme seu painel de hospedagem.</li>";
-    echo "<li>O erro acima geralmente indica senha errada ou usuário sem permissão no banco.</li>";
-    echo "</ol>";
+    echo "<p>Detalhe: " . $e->getMessage() . "</p>";
 }

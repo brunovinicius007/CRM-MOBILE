@@ -1,6 +1,6 @@
 {
-  "name": "IAFinanceCRM",
-  "short_name": "IAFinance",
+  "name": "Minhas Finanças",
+  "short_name": "Finanças",
   "start_url": "index.php",
   "display": "standalone",
   "background_color": "#1f2937",

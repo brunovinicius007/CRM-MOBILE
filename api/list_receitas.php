@@ -7,15 +7,16 @@ require_once '../src/utils.php';
 requireAuth();
 
 $userId = getCurrentUserId();
-$filtroData = $_GET['data'] ?? '';
+$filtroData = $_GET['data'] ?? ''; // Ex: 2024-03
 $filtroCategoria = $_GET['categoria'] ?? '';
 
 $sql = "SELECT * FROM receitas WHERE user_id = ?";
 $params = [$userId];
 
 if (!empty($filtroData)) {
+    // Garante que pegamos todos os dias do mês (YYYY-MM-DD)
     $sql .= " AND data LIKE ?";
-    $params[] = "$filtroData%"; // Ex: 2024-02
+    $params[] = $filtroData . "%";
 }
 
 if (!empty($filtroCategoria)) {

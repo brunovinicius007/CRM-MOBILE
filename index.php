@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IAFinance - Login</title>
+    <title>Minhas Finan�as - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1f2937">
@@ -27,7 +27,7 @@
 
     <div class="w-full max-w-md bg-white dark:bg-dark rounded-2xl shadow-xl p-8 transform transition-all hover:scale-[1.01]">
         <div class="flex justify-center mb-6">
-            <img src="assets/logo.svg" alt="IAFinance Logo" class="w-20 h-20 animate-bounce">
+            <img src="assets/logo.svg" alt="Minhas Finan�as Logo" class="w-20 h-20 animate-bounce">
         </div>
         <h1 class="text-3xl font-bold text-center mb-2 text-primary">Bem-vindo</h1>
         <p class="text-center text-gray-500 dark:text-gray-400 mb-8">Gerencie suas finanças com inteligência.</p>

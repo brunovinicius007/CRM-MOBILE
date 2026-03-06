@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // api/delete_despesa.php
 require_once '../src/db.php';
 require_once '../src/auth.php';
