@@ -9,18 +9,24 @@ requireAuth();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') sendError('Method Not Allowed', 405);
 
 $input = getJsonInput();
+
+if (!$input) {
+    // Se falhar o JSON, tenta pegar do $_POST comum (fallback)
+    $input = $_POST;
+}
+
 $titulo = $input['titulo'] ?? '';
 $valor_objetivo = $input['valor_objetivo'] ?? '';
 $prazo = $input['prazo'] ?? '';
 
 if (empty($titulo) || empty($valor_objetivo) || empty($prazo)) {
-    sendError('Preencha todos os campos.');
+    sendError('Preencha todos os campos corretamente.');
 }
 
 try {
-    $stmt = $pdo->prepare("INSERT INTO metas (user_id, titulo, valor_objetivo, prazo) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO metas (user_id, titulo, valor_objetivo, prazo, valor_poupado) VALUES (?, ?, ?, ?, 0)");
     $stmt->execute([getCurrentUserId(), $titulo, $valor_objetivo, $prazo]);
     sendJson(['message' => 'Meta criada com sucesso!']);
 } catch (PDOException $e) {
-    sendError('Erro ao criar meta.');
+    sendError('Erro no banco de dados: ' . $e->getMessage());
 }

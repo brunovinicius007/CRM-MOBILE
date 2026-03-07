@@ -48,21 +48,6 @@ requireAuth();
         <p class="text-center text-gray-500 mt-10 uppercase text-xs font-black animate-pulse">Carregando...</p>
     </main>
 
-    <div class="p-4 pt-0 pb-10">
-        <h3 class="font-bold text-lg mb-4 text-gray-800 dark:text-white uppercase tracking-tighter text-sm">Central de Dados</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="api/export_backup.php" class="p-5 bg-white dark:bg-dark rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 hover:border-primary transition-all">
-                <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-primary rounded-2xl flex items-center justify-center font-black text-[10px] uppercase">Baixar</div>
-                <div><p class="font-black text-gray-800 dark:text-white text-sm">Exportar Backup</p></div>
-            </a>
-            <button onclick="document.getElementById('ofxInput').click()" class="p-5 bg-white dark:bg-dark rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 hover:border-secondary transition-all text-left">
-                <div class="w-12 h-12 bg-green-50 dark:bg-green-900/20 text-secondary rounded-2xl flex items-center justify-center font-bold text-xl text-sm">📄</div>
-                <div><p class="font-black text-gray-800 dark:text-white text-sm">Importar OFX</p></div>
-            </button>
-            <input type="file" id="ofxInput" accept=".ofx" class="hidden" onchange="uploadOfx(this)">
-        </div>
-    </div>
-
     <!-- Modal Usuário -->
     <div id="userModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white dark:bg-dark w-full max-w-md rounded-3xl shadow-2xl p-6">

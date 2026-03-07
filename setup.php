@@ -15,22 +15,15 @@ $dbName = getenv('DB_NAME') ?: 'iafinance_crm';
 try {
     echo "<h1>Minhas Finanças Setup 🛠️</h1>";
     
-    // 1. Initial Connection
-    $pdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-    
-    // 2. Create Database
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    echo "<p>✅ Banco de dados <b>$dbName</b> criado/verificado!</p>";
-    
-    // 3. Connect to specific DB
-    $pdo->exec("USE `$dbName` ");
+    // 1. Connection directly to the DB
+    echo "<p>Conectando ao banco <b>$dbName</b> no host <b>$host</b>...</p>";
     $pdo = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-
-    // 4. Create Tables
+    
+    echo "<p>✅ Conectado ao banco de dados!</p>";
+    
+    // 2. Create Tables
     $sql = "
     CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,

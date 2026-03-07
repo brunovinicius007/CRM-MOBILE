@@ -1,54 +1,17 @@
-# Configurações de Servidor - Minhas Finanças
-
-# 1. Impede a listagem de arquivos nas pastas (Directory Browsing)
-Options -Indexes
-
-# 2. Define o arquivo padrão inicial
+# Configuração mínima para servidores gratuitos
 DirectoryIndex index.php
 
-# 3. PROTEÇÃO CRÍTICA: Bloqueia o acesso ao arquivo .env e arquivos de log
-<Files ".env">
-    Order allow,deny
-    Deny from all
-</Files>
-
-<Files "*.log">
-    Order allow,deny
-    Deny from all
-</Files>
-
-# 4. Bloqueia acesso direto à pasta de lógica do sistema
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Bloqueia acesso à pasta src
+    # Detecta HTTPS em servidores com proxy (Ezyro/InfinityFree)
+    # Isso ajuda o PHP a saber que o site está em modo seguro
+    SetEnvIf X-Forwarded-Proto https HTTPS=on
+
+    # Força HTTPS (Ativado a pedido do usuário)
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Se o erro 500 persistir, comente a linha abaixo colocando um # na frente
     RewriteRule ^src/.*$ - [F,L]
-    
-    # Redireciona HTTP para HTTPS (Ative quando tiver SSL/Cadeado no site)
-    # RewriteCond %{HTTPS} off
-    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-</IfModule>
-
-# 5. Configurações de Segurança de Cabeçalho (Headers)
-<IfModule mod_headers.c>
-    # Impede que o site seja aberto dentro de um iframe de outro site
-    Header set X-Frame-Options "SAMEORIGIN"
-    # Proteção contra XSS no navegador
-    Header set X-XSS-Protection "1; mode=block"
-    # Impede o navegador de tentar "adivinhar" o tipo de conteúdo
-    Header set X-Content-Type-Options "nosniff"
-</IfModule>
-
-# 6. Aumenta o tempo de execução e limite de memória (Útil para importação de OFX)
-<IfModule mod_php7.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
-    php_value max_execution_time 300
-    php_value memory_limit 128M
-</IfModule>
-<IfModule mod_php.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
-    php_value max_execution_time 300
-    php_value memory_limit 128M
 </IfModule>

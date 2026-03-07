@@ -50,6 +50,10 @@
                 <label for="senha" class="block text-sm font-medium mb-1 uppercase text-[10px] font-bold text-gray-400">Senha</label>
                 <input type="password" id="senha" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="••••••••" required>
             </div>
+            <div>
+                <label for="confirm_senha" class="block text-sm font-medium mb-1 uppercase text-[10px] font-bold text-gray-400">Confirmar Senha</label>
+                <input type="password" id="confirm_senha" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="••••••••" required>
+            </div>
 
             <!-- CÓDIGO DE VALIDAÇÃO -->
             <div class="pt-2">
@@ -79,8 +83,15 @@
             const nome = document.getElementById('nome').value;
             const email = document.getElementById('email').value;
             const senha = document.getElementById('senha').value;
+            const confirmSenha = document.getElementById('confirm_senha').value;
             const codigo = document.getElementById('codigo').value;
             const btn = e.target.querySelector('button');
+
+            if (senha !== confirmSenha) {
+                alert('As senhas não coincidem!');
+                document.getElementById('confirm_senha').focus();
+                return;
+            }
             
             btn.innerHTML = 'Validando...';
             btn.disabled = true;

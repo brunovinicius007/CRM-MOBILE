@@ -59,5 +59,5 @@ try {
 } catch (PDOException $e) {
     // Se houve qualquer erro, desfaz tudo o que foi tentado no laço for
     if ($pdo->inTransaction()) $pdo->rollBack();
-    sendError('Erro ao salvar despesa(s) no banco de dados.');
+    sendError('Erro ao salvar despesa(s): ' . $e->getMessage());
 }

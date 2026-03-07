@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = getJsonInput();
-$email = $input['email'] ?? '';
+$email = strtolower(trim($input['email'] ?? ''));
 $senha = $input['senha'] ?? '';
 
 if (empty($email) || empty($senha)) {
@@ -18,7 +18,8 @@ if (empty($email) || empty($senha)) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+    // Busca o usuário ignorando maiúsculas/minúsculas no e-mail
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(email) = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 

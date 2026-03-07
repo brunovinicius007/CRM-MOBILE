@@ -44,7 +44,7 @@ $id = $_GET['id'] ?? null;
 
                 <div>
                     <label class="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-widest">Valor (R$)</label>
-                    <input type="number" step="0.01" id="valor" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-danger/20 outline-none font-bold" placeholder="0,00" required>
+                    <input type="text" id="valor" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-danger/20 outline-none font-bold" placeholder="0,00" required>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -138,10 +138,20 @@ $id = $_GET['id'] ?? null;
         document.getElementById('despesaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
+            
+            // Limpa o valor para garantir que seja um número válido (troca vírgula por ponto)
+            let valorLimpo = document.getElementById('valor').value.replace(',', '.');
+            valorLimpo = parseFloat(valorLimpo);
+
+            if (isNaN(valorLimpo) || valorLimpo <= 0) {
+                alert('Por favor, insira um valor válido.');
+                return;
+            }
+
             const body = {
                 id: itemId,
                 descricao: document.getElementById('descricao').value,
-                valor: document.getElementById('valor').value,
+                valor: valorLimpo,
                 categoria: document.getElementById('categoria').value,
                 subcategoria: document.getElementById('categoria').value === 'Cartão de Crédito' ? document.getElementById('subcategoria').value : null,
                 data: document.getElementById('data').value

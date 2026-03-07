@@ -64,11 +64,23 @@ requireAuth();
                 <input type="hidden" id="editId">
                 <div><label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Título do Sonho</label><input type="text" id="titulo" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-primary" placeholder="Ex: Viagem, Carro..." required></div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Valor Alvo</label><input type="number" step="0.01" id="valor_objetivo" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none outline-none font-bold text-sm" required></div>
+                    <div><label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Valor Alvo</label><input type="text" id="valor_objetivo" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none outline-none font-bold text-sm" placeholder="0.00" required></div>
                     <div><label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Prazo</label><input type="date" id="prazo" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none outline-none text-sm" required></div>
                 </div>
                 <button type="submit" id="saveBtn" class="w-full py-4 rounded-2xl bg-primary text-white font-black text-sm shadow-lg mt-4 uppercase">Salvar Sonho</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Valor -->
+    <div id="addValueModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all">
+        <div class="bg-white dark:bg-dark w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6"><h3 class="font-black text-lg uppercase text-sm">Poupou quanto hoje?</h3><button onclick="closeAddValueModal()" class="text-gray-400 font-bold text-xl">✕</button></div>
+            <div class="space-y-4">
+                <input type="hidden" id="targetMetaId">
+                <div><label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Valor Poupadado</label><input type="text" id="addValueInput" class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border-none outline-none font-bold text-sm" placeholder="0,00" required></div>
+                <button onclick="confirmAddValue()" class="w-full py-4 rounded-2xl bg-secondary text-white font-black text-sm shadow-lg mt-4 uppercase">Adicionar Valor</button>
+            </div>
         </div>
     </div>
 
@@ -147,16 +159,76 @@ requireAuth();
         }
         document.getElementById('metaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const editId = document.getElementById('editId').value, body = { id: editId, titulo: document.getElementById('titulo').value, valor_objetivo: document.getElementById('valor_objetivo').value, prazo: document.getElementById('prazo').value };
-            await fetch(editId ? 'api/update_meta.php' : 'api/create_meta.php', { method: 'POST', body: JSON.stringify(body) });
-            closeModal(); loadMetas();
+            const editId = document.getElementById('editId').value;
+            const btn = document.getElementById('saveBtn');
+            
+            // Tratamento de valor decimal (vírgula para ponto)
+            let valorLimpo = document.getElementById('valor_objetivo').value.replace(',', '.');
+            valorLimpo = parseFloat(valorLimpo);
+
+            if (isNaN(valorLimpo) || valorLimpo <= 0) {
+                alert('Por favor, insira um valor de objetivo válido.');
+                return;
+            }
+
+            const body = { 
+                id: editId, 
+                titulo: document.getElementById('titulo').value, 
+                valor_objetivo: valorLimpo, 
+                prazo: document.getElementById('prazo').value 
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = 'Salvando...';
+
+            try {
+                const res = await fetch(editId ? 'api/update_meta.php' : 'api/create_meta.php', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body) 
+                });
+                
+                const text = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch(e) {
+                    throw new Error('Resposta inválida do servidor: ' + text);
+                }
+
+                if (res.ok) {
+                    closeModal(); 
+                    await loadMetas();
+                } else {
+                    alert(data.error || 'Erro ao salvar meta.');
+                }
+            } catch (err) {
+                alert('Erro: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Salvar Sonho';
+            }
         });
         function openAddValueModal(id) { document.getElementById('targetMetaId').value = id; document.getElementById('addValueModal').classList.remove('hidden'); }
         function closeAddValueModal() { document.getElementById('addValueModal').classList.add('hidden'); }
         async function confirmAddValue() {
-            const id = document.getElementById('targetMetaId').value, valor = document.getElementById('addValueInput').value; if(!valor) return;
-            await fetch('api/update_meta_valor.php', { method: 'POST', body: JSON.stringify({id, valor}) });
-            closeAddValueModal(); loadMetas();
+            const id = document.getElementById('targetMetaId').value;
+            let valor = document.getElementById('addValueInput').value.replace(',', '.');
+            valor = parseFloat(valor);
+            
+            if (isNaN(valor) || valor <= 0) {
+                alert('Por favor, insira um valor válido.');
+                return;
+            }
+
+            await fetch('api/update_meta_valor.php', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({id, valor}) 
+            });
+            document.getElementById('addValueInput').value = '';
+            closeAddValueModal(); 
+            loadMetas();
         }
         async function deleteMeta(id) { if(!confirm('Excluir?')) return; await fetch('api/delete_meta.php', { method: 'POST', body: JSON.stringify({id}) }); loadMetas(); }
         async function logout() { if(!confirm('Sair?')) return; await fetch('api/logout.php'); window.location.href = 'index.php'; }

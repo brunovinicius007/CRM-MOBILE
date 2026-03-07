@@ -23,5 +23,5 @@ try {
     $stmt->execute([$titulo, $valor_objetivo, $prazo, $id, getCurrentUserId()]);
     sendJson(['message' => 'Meta atualizada com sucesso!']);
 } catch (PDOException $e) {
-    sendError('Erro ao atualizar meta.');
+    sendError('Erro ao atualizar meta: ' . $e->getMessage());
 }

@@ -74,6 +74,19 @@ requireAuth(); // Garante que o usuário está logado
                 <h3 class="text-4xl font-black mb-4 tracking-tighter" id="totalSaldo">R$ 0,00</h3>
                 <div id="statusBadge"></div>
             </div>
+            
+            <!-- Resumo Rápido dentro do Card -->
+            <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10 relative z-10">
+                <div>
+                    <p class="text-[9px] uppercase font-black text-blue-200 opacity-70 mb-1">Ganhos</p>
+                    <p class="text-sm font-bold" id="totalReceitas">R$ 0,00</p>
+                </div>
+                <div>
+                    <p class="text-[9px] uppercase font-black text-blue-200 opacity-70 mb-1">Gastos</p>
+                    <p class="text-sm font-bold" id="totalDespesas">R$ 0,00</p>
+                </div>
+            </div>
+
             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
         </div>
 
@@ -149,6 +162,28 @@ requireAuth(); // Garante que o usuário está logado
                 </div>
                 <span class="text-[10px] font-black uppercase tracking-widest text-white">Nova Despesa</span>
              </a>
+        </div>
+
+        <!-- Central de Dados (Export/Import) -->
+        <div class="bg-white dark:bg-dark p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 transition-all duration-300">
+            <h3 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2">
+                <span>📁</span> Central de Dados
+            </h3>
+            <div class="grid grid-cols-1 gap-3">
+                <a href="api/export_backup.php" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-between group hover:bg-primary transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-primary group-hover:bg-white group-hover:text-primary rounded-xl flex items-center justify-center font-bold text-xl transition-all">📥</div>
+                        <p class="font-black text-gray-800 dark:text-white group-hover:text-white text-xs uppercase tracking-widest">Exportar Backup</p>
+                    </div>
+                </a>
+                <button onclick="document.getElementById('ofxInput').click()" class="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-between group hover:bg-secondary transition-all text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-secondary group-hover:bg-white group-hover:text-secondary rounded-xl flex items-center justify-center font-bold text-xl transition-all">📄</div>
+                        <p class="font-black text-gray-800 dark:text-white group-hover:text-white text-xs uppercase tracking-widest">Importar OFX</p>
+                    </div>
+                </button>
+                <input type="file" id="ofxInput" accept=".ofx" class="hidden" onchange="uploadOfx(this)">
+            </div>
         </div>
 
     </main>
@@ -241,95 +276,129 @@ requireAuth(); // Garante que o usuário está logado
             const monthName = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
             document.getElementById('currentMonthName').innerText = monthName;
 
-            console.log("Filtrando para o mês:", dateFiltro);
+            try {
+                // Busca todos os dados necessários em paralelo
+                const [rRes, dRes, mRes, nRes] = await Promise.all([
+                    fetch(`api/list_receitas.php?data=${dateFiltro}`),
+                    fetch(`api/list_despesas.php?data=${dateFiltro}`),
+                    fetch(`api/list_metas.php`),
+                    fetch(`api/get_news.php`)
+                ]);
+                
+                let receitas = await rRes.json();
+                let despesas = await dRes.json();
+                let metas = await mRes.json();
+                let news = await nRes.json();
 
-            // Busca todos os dados necessários em paralelo
-            const [rRes, dRes, mRes, nRes] = await Promise.all([
-                fetch(`api/list_receitas.php?data=${dateFiltro}`),
-                fetch(`api/list_despesas.php?data=${dateFiltro}`),
-                fetch(`api/list_metas.php`),
-                fetch(`api/get_news.php`)
-            ]);
-            
-            const receitas = await rRes.json(), despesas = await dRes.json();
-            
-            console.log("Receitas encontradas:", receitas.length);
-            console.log("Despesas encontradas:", despesas.length);
+                // Garante que os dados sejam arrays
+                if (!Array.isArray(receitas)) receitas = [];
+                if (!Array.isArray(despesas)) despesas = [];
+                if (!Array.isArray(metas)) metas = [];
+                if (!Array.isArray(news)) news = [];
 
-            const metas = await mRes.json(), news = await nRes.json();
+                // Renderiza as notícias
+                const newsContainer = document.getElementById('newsContainer');
+                newsContainer.innerHTML = news.length > 0 ? news.map(n => `
+                    <a href="${n.link}" target="_blank" class="block group">
+                        <p class="text-[10px] font-black text-primary uppercase mb-1">${n.pubDate}</p>
+                        <p class="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-all">${n.title}</p>
+                    </a>
+                `).join('<hr class="border-gray-50 dark:border-gray-800">') : '<p class="text-xs text-gray-400">Sem notícias no momento.</p>';
 
-            // Renderiza as notícias buscadas do G1
-            const newsContainer = document.getElementById('newsContainer');
-            newsContainer.innerHTML = news.length > 0 ? news.map(n => `
-                <a href="${n.link}" target="_blank" class="block group">
-                    <p class="text-[10px] font-black text-primary uppercase mb-1">${n.pubDate}</p>
-                    <p class="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-all">${n.title}</p>
-                </a>
-            `).join('<hr class="border-gray-50 dark:border-gray-800">') : '<p class="text-xs text-gray-400">Sem notícias.</p>';
+                // Calcula os totais financeiros
+                const totalR = receitas.reduce((acc, item) => acc + (parseFloat(String(item.valor).replace(',', '.')) || 0), 0);
+                const totalD = despesas.reduce((acc, item) => acc + (parseFloat(String(item.valor).replace(',', '.')) || 0), 0);
+                const saldo = totalR - totalD;
 
-            // Calcula os totais financeiros com tratamento rigoroso de números
-            const totalR = receitas.reduce((acc, item) => {
-                const v = parseFloat(String(item.valor).replace(',', '.'));
-                return acc + (isNaN(v) ? 0 : v);
-            }, 0);
+                document.getElementById('totalReceitas').innerText = `R$ ${totalR.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalDespesas').innerText = `R$ ${totalD.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalSaldo').innerText = `R$ ${saldo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
 
-            const totalD = despesas.reduce((acc, item) => {
-                const v = parseFloat(String(item.valor).replace(',', '.'));
-                return acc + (isNaN(v) ? 0 : v);
-            }, 0);
+                // Meta em destaque
+                const metaCard = document.getElementById('dashMetaCard');
+                if (metas.length > 0) {
+                    const meta = metas[0]; 
+                    const prog = Math.min(meta.progresso, 100).toFixed(0);
+                    metaCard.classList.remove('hidden');
+                    document.getElementById('dashMetaData').innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-black text-gray-700 dark:text-gray-200">${meta.titulo}</span>
+                            <span class="text-xs font-black text-primary">${prog}%</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-primary transition-all duration-1000" style="width: ${prog}%"></div>
+                        </div>`;
+                } else {
+                    metaCard.classList.add('hidden');
+                }
 
-            const saldo = totalR - totalD;
+                // Dias de Vida
+                const totalPoupado = metas.reduce((acc, m) => acc + (parseFloat(m.valor_poupado) || 0), 0);
+                const survivalCard = document.getElementById('survivalCard');
+                if (totalPoupado > 0 && totalD > 0) {
+                    const days = Math.floor(totalPoupado / (totalD / 30)); 
+                    survivalCard.classList.remove('hidden');
+                    document.getElementById('survivalDays').innerText = days;
+                    const badge = document.getElementById('daysBadge');
+                    if (days > 180) { badge.innerText = "NÍVEL: INABALÁVEL 💎"; badge.className = "px-2 py-1 bg-green-500/10 text-green-500 text-[10px] font-black rounded-lg"; }
+                    else if (days > 90) { badge.innerText = "NÍVEL: SEGURO ✅"; badge.className = "px-2 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black rounded-lg"; }
+                    else { badge.innerText = "NÍVEL: ALERTA ⚠️"; badge.className = "px-2 py-1 bg-orange-500/10 text-orange-500 text-[10px] font-black rounded-lg"; }
+                } else {
+                    survivalCard.classList.add('hidden');
+                }
 
-            document.getElementById('totalReceitas').innerText = `R$ ${totalR.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('totalDespesas').innerText = `R$ ${totalD.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('totalSaldo').innerText = `R$ ${saldo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                // Status do Card de Saldo
+                const badge = document.getElementById('statusBadge'), card = document.getElementById('balanceCard'), comp = totalR > 0 ? (totalD / totalR) * 100 : (totalD > 0 ? 101 : 0);
+                let statusHTML = '', cardClass = 'from-primary to-blue-700';
+                if (comp > 100) { statusHTML = 'Perigo: No Vermelho! 🚨'; cardClass = 'from-red-600 to-red-900'; }
+                else if (comp > 85) { statusHTML = 'Crítico: Quase sem saldo! ⚠️'; cardClass = 'from-orange-500 to-orange-700'; }
+                else if (totalR === 0 && totalD === 0) { statusHTML = 'Aguardando Lançamentos 📊'; cardClass = 'from-gray-500 to-gray-700'; }
+                else if (comp > 50) { statusHTML = 'Saúde Financeira Boa ✅'; cardClass = 'from-blue-500 to-blue-700'; }
+                else { statusHTML = 'Saúde Financeira Excelente! 💎'; cardClass = 'from-green-500 to-green-700'; }
+                badge.innerHTML = `<span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">${statusHTML}</span>`;
+                card.className = `bg-gradient-to-br ${cardClass} rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden transition-all duration-500`;
 
-            // Exibe a meta mais próxima do objetivo
-            if (metas.length > 0) {
-                const meta = metas[0]; const prog = Math.min(meta.progresso, 100).toFixed(0);
-                document.getElementById('dashMetaCard').classList.remove('hidden');
-                document.getElementById('dashMetaData').innerHTML = `<div class="flex justify-between items-center mb-2"><span class="text-sm font-black text-gray-700 dark:text-gray-200">${meta.titulo}</span><span class="text-xs font-black text-primary">${prog}%</span></div><div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden"><div class="h-full bg-primary transition-all duration-1000" style="width: ${prog}%"></div></div>`;
+                // Porcentagem de Economia
+                const perc = totalR > 0 ? Math.round(((totalR - totalD) / totalR) * 100) : 0;
+                const percEl = document.getElementById('percEconomia');
+                percEl.innerText = `${perc}%`;
+                percEl.className = perc >= 0 ? 'text-lg font-black text-secondary' : 'text-lg font-black text-danger';
+
+                // Gráfico de Rosca
+                const ctx = document.getElementById('financeChart').getContext('2d');
+                if (financeChart) financeChart.destroy();
+                const isDark = document.documentElement.classList.contains('dark');
+                
+                // Se não houver dados, mostra um gráfico cinza
+                const hasData = totalR > 0 || totalD > 0;
+                const chartData = hasData ? [totalR, totalD] : [1, 0];
+                const chartColors = hasData ? ['#10b981', '#ef4444'] : [isDark ? '#374151' : '#e5e7eb', '#e5e7eb'];
+
+                financeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { 
+                        labels: ['Receitas', 'Despesas'], 
+                        datasets: [{ 
+                            data: chartData, 
+                            backgroundColor: chartColors, 
+                            borderWidth: isDark ? 2 : 0, 
+                            borderColor: '#1f2937' 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '80%', 
+                        plugins: { legend: { display: false } },
+                        animation: { duration: 1000 }
+                    }
+                });
+                
+                generateInsights(despesas, totalD, totalR);
+
+            } catch (err) {
+                console.error("Erro ao carregar dashboard:", err);
             }
-
-            // Calcula Dias de Vida (Reserva Total / Gasto Médio Diário)
-            const totalPoupado = metas.reduce((acc, m) => acc + parseFloat(m.valor_poupado), 0);
-            if (totalPoupado > 0 && totalD > 0) {
-                const days = Math.floor(totalPoupado / (totalD / 30)); 
-                document.getElementById('survivalCard').classList.remove('hidden');
-                document.getElementById('survivalDays').innerText = days;
-                const badge = document.getElementById('daysBadge');
-                if (days > 180) { badge.innerText = "NÍVEL: INABALÁVEL 💎"; badge.className = "px-2 py-1 bg-green-500/10 text-green-500 text-[10px] font-black rounded-lg"; }
-                else if (days > 90) { badge.innerText = "NÍVEL: SEGURO ✅"; badge.className = "px-2 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black rounded-lg"; }
-                else { badge.innerText = "NÍVEL: ALERTA ⚠️"; badge.className = "px-2 py-1 bg-orange-500/10 text-orange-500 text-[10px] font-black rounded-lg"; }
-            }
-
-            // Define a cor e o status do Termômetro Financeiro
-            const badge = document.getElementById('statusBadge'), card = document.getElementById('balanceCard'), comp = totalR > 0 ? (totalD / totalR) * 100 : 0;
-            let statusHTML = '', cardClass = 'from-primary to-blue-700';
-            if (comp > 100) { statusHTML = 'Perigo: No Vermelho! 🚨'; cardClass = 'from-red-600 to-red-900'; }
-            else if (comp > 85) { statusHTML = 'Crítico: Quase sem saldo! ⚠️'; cardClass = 'from-orange-500 to-orange-700'; }
-            else if (comp > 50) { statusHTML = 'Saúde Financeira Boa ✅'; cardClass = 'from-blue-500 to-blue-700'; }
-            else { statusHTML = 'Saúde Financeira Excelente! 💎'; cardClass = 'from-green-500 to-green-700'; }
-            badge.innerHTML = `<span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">${statusHTML}</span>`;
-            card.className = `bg-gradient-to-br ${cardClass} rounded-3xl p-8 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden transition-all duration-500`;
-
-            // Porcentagem de Economia do Mês
-            const perc = totalR > 0 ? Math.round(((totalR - totalD) / totalR) * 100) : 0;
-            const percEl = document.getElementById('percEconomia');
-            percEl.innerText = `${perc}%`;
-            percEl.className = perc >= 0 ? 'text-lg font-black text-secondary' : 'text-lg font-black text-danger';
-
-            // Gráfico de Rosca (Donut Chart)
-            const ctx = document.getElementById('financeChart').getContext('2d');
-            if (financeChart) financeChart.destroy();
-            const isDark = document.documentElement.classList.contains('dark');
-            financeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['Receitas', 'Despesas'], datasets: [{ data: [totalR, totalD], backgroundColor: ['#10b981', '#ef4444'], borderWidth: isDark ? 2 : 0, borderColor: '#1f2937' }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
-            });
-            
-            generateInsights(despesas, totalD, totalR);
         }
 
         /**
@@ -376,6 +445,30 @@ requireAuth(); // Garante que o usuário está logado
         }
         function openDetailedReport() { window.location.href = `relatorio.php?month=${document.getElementById('dashDate').value}`; }
         async function logout() { if(!confirm('Deseja sair?')) return; await fetch('api/logout.php'); window.location.href = 'index.php'; }
+        
+        async function uploadOfx(input) {
+            if (!input.files[0]) return;
+            const btn = input.parentElement.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Processando...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('ofx_file', input.files[0]);
+
+            try {
+                const res = await fetch('api/process_ofx.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                alert(data.message || data.error);
+                if (res.ok) loadDashboardData();
+            } catch (err) {
+                alert('Erro ao processar arquivo.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                input.value = '';
+            }
+        }
         
         loadDashboardData();
     </script>
