@@ -1,0 +1,22 @@
+name: minhas_financas_mobile
+description: Aplicativo Android para gestão financeira pessoal.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0 # Para chamadas de API PHP
+  shared_preferences: ^2.2.2 # Para salvar o login (token/sessão)
+  intl: ^0.18.1 # Para formatar moedas e datas
+  google_fonts: ^6.1.0 # Para tipografia moderna
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
