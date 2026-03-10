@@ -1,23 +1,12 @@
 <?php
 /**
- * src/db.php - Conexão com o Banco de Dados
+ * src/db.php - Conexão Centralizada com o Banco de Dados
  */
 
-require_once __DIR__ . '/utils.php';
 require_once __DIR__ . '/config.php';
 
-// Carrega as variáveis do arquivo .env se ele existir (diretório raiz)
-loadEnv(__DIR__ . '/../.env');
-
-// Pega os dados com prioridade para o .env, senão usa config.php (defines)
-$host    = getenv('DB_HOST') ?: (defined('DB_HOST') ? DB_HOST : 'localhost');
-$db      = getenv('DB_NAME') ?: (defined('DB_NAME') ? DB_NAME : '');
-$user    = getenv('DB_USER') ?: (defined('DB_USER') ? DB_USER : '');
-$pass    = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (defined('DB_PASS') ? DB_PASS : '');
-$charset = getenv('DB_CHARSET') ?: (defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4');
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-
+// Montagem do DSN (Data Source Name) usando as constantes fixas de config.php
+$dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -26,7 +15,8 @@ $options = [
 ];
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (\PDOException $e) {
-    die("Erro de conexão: " . $e->getMessage());
+    // Se ocorrer um erro de conexão, para a execução e exibe a mensagem amigável
+    die("❌ Erro de conexão com o banco de dados. Por favor, verifique suas configurações no arquivo src/config.php");
 }

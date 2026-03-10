@@ -1,29 +1,22 @@
 <?php
 /**
- * setup.php - Instalador Automático
+ * setup.php - Instalador Automático (Configurado para config.php)
  */
-require_once 'src/utils.php';
-
-// Carrega as variáveis do arquivo .env
-loadEnv(__DIR__ . '/.env');
-
-$host = getenv('DB_HOST') ?: 'localhost';
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
-$dbName = getenv('DB_NAME') ?: 'iafinance_crm';
+require_once 'src/config.php';
 
 try {
     echo "<h1>Minhas Finanças Setup 🛠️</h1>";
     
-    // 1. Connection directly to the DB
-    echo "<p>Conectando ao banco <b>$dbName</b> no host <b>$host</b>...</p>";
-    $pdo = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8mb4", $user, $pass, [
+    echo "<p>Conectando ao banco <b>" . DB_NAME . "</b> no host <b>" . DB_HOST . "</b>...</p>";
+    
+    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
     
     echo "<p>✅ Conectado ao banco de dados!</p>";
     
-    // 2. Create Tables
+    // SQL para criar as tabelas
     $sql = "
     CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -81,7 +74,7 @@ try {
     $pdo->exec($sql);
     echo "<p>✅ Tabelas criadas/verificadas com sucesso.</p>";
 
-    // 5. Create Test User
+    // Criar usuário de teste
     $nome = "Usuário Teste";
     $email = "admin@teste.com";
     $senha = "123456";
